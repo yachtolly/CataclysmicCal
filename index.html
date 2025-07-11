@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mayan Calendar + Cataclysms</title>
+<style>
+body {
+	font-family: monospace;
+	background: #111;
+	color: #0f0;
+	text-align: center;
+	padding: 2em;
+	margin: 0;
+}
+h1,h2 { color:#f5f5f5;font-weight:bold; }
+p, .info { font-weight:300;color:#8f8; }
+.info strong, #severity, #cataclysm { font-weight:bold;color:#fff; }
+input[type=range],input[type=date] {
+	width:80%;margin:.5em 0;padding:.3em;text-align:center;
+}
+#timelineGraph {
+	margin:2em auto;width:90%;height:60px;background:#222;
+	border:1px solid #333;position:relative;text-align:left;
+}
+#timelineGraph::before {
+	content:"";display:block;position:absolute;top:50%;left:0;
+	width:100%;height:2px;background:#444;
+}
+#severityBar {
+	width:80%;height:30px;background:#333;margin:1em auto;position:relative;
+}
+#severityFill {
+	height:100%;background:#0f0;width:0%;
+}
+#stormOverlay {
+	position:fixed;top:0;left:0;width:100%;height:100%;
+	pointer-events:none;z-index:10;display:none;font-size:4em;
+}
+.help { font-size:.9em;color:#ccc;margin-top:.3em; }
+.cheat-sheet, .cataclysm-timeline {
+	text-align:left;max-width:800px;margin:2em auto;color:#ccc;
+	background:#222;padding:1em;border:1px solid #333;
+}
+.cheat-sheet h2, .cataclysm-timeline h2 {
+	text-align:center;color:#f55;
+}
+.cataclysm-timeline ul {
+	list-style:none;padding:0;
+}
+.cataclysm-timeline li {
+	margin:.5em 0;padding-left:1em;position:relative;
+}
+.cataclysm-timeline li::before {
+	content:"☄️";position:absolute;left:0;color:#f55;
+}
+</style>
+</head>
+<body>
+
+<h1>🌒 Mayan Calendar + Cataclysm Countdown</h1>
+
+<p>📅 Pick a Gregorian Date:<br>
+<input type="date" id="dateInput" value="2025-07-10">
+<div class="help">Or use the slider below to pick a year instead.</div>
+</p>
+
+<p id="gregorian"></p>
+<div class="info"><strong>Mayan Long Count</strong> — tracks total days since creation.</div>
+<p id="longCount"></p>
+<p id="tzolkin"></p>
+<div class="info"><strong>Tzolk’in</strong> — 260-day sacred cycle.</div>
+<p id="haab"></p>
+<div class="info"><strong>Haab’</strong> — 365-day solar cycle.</div>
+<p id="prediction"></p>
+<p id="cataclysm"></p>
+<p id="severity"></p>
+<div id="severityBar"><div id="severityFill"></div></div>
+
+<div id="timelineGraph"></div>
+<div id="stormOverlay">🌩️</div>
+
+<p>📅 Or use timeline slider:<br>
+<input type="range" id="slider" min="-10000" max="5000" value="0">
+<br><span id="sliderLabel"></span>
+</p>
+
+<div class="cheat-sheet">
+<h2>📜 Mayan Calendar Cheat Sheet</h2>
+<div><b>🔮 Tzolk’in (260-day ritual calendar)</b><br>
+• 20 day-names × 13 numbers → 260 unique days.<br>
+• Used for divination, ceremonies, and agriculture.</div>
+<div><b>☀️ Haab’ (365-day solar calendar)</b><br>
+• 18 months of 20 days + 5 “nameless” days → 365.<br>
+• Civil calendar, tracking the solar year.</div>
+<div><b>🔄 Calendar Round (52 years)</b><br>
+• Every 52 Haab’ years, the Tzolk’in & Haab’ align → big reset.</div>
+<div><b>🗿 Long Count</b><br>
+• Tracks time from mythical creation date: August 11, 3114 BCE.<br>
+• Units: Kin = 1 day, Uinal = 20 days, Tun = 360, Katun = 7,200 (~20 years), Baktun = 144,000 (~394 years)</div>
+<div><b>🤔 2012?</b><br>
+• Just the end of the 13th baktun — a cycle reset, not apocalypse.</div>
+</div>
+
+<div class="cataclysm-timeline">
+<h2>☄️ Documented & Theorized Cataclysms</h2>
+<ul>
+<li><strong>~29,000 BCE</strong> — Hudson Bay pole shift — mass extinctions, ice sheets advance</li>
+<li><strong>~18,500 BCE</strong> — Atlantis? Sudden flooding, Younger Dryas begins</li>
+<li><strong>~11,500 BCE</strong> — End of Ice Age, massive floods, mammoths frozen</li>
+<li><strong>~7,000 BCE</strong> — Noah’s Flood, Black Sea deluge, sea levels rise</li>
+<li><strong>~3,000 BCE</strong> — Sumerian flood legend, drought & collapse</li>
+<li><strong>~1,200 BCE</strong> — Bronze Age Collapse, earthquakes, migrations</li>
+<li><strong>536 CE</strong> — “Year Without a Sun” — volcanic winter, famine</li>
+<li><strong>1815 CE</strong> — Tambora eruption, “Year Without a Summer”</li>
+</ul>
+</div>
+
+<script>
+const tzolkinNames=[ "Imix","Ik’","Ak’bal","K’an","Chikchan","Kimi","Manik’","Lamat","Muluk","Ok","Chuwen","Eb'","B’en","Ix","Men","K’ib'","Kaban","Etz’nab’","Kawak","Ajaw"];
+const haabMonths=[ "Pop","Wo’","Sip","Sotz’","Sek","Xul","Yaxk’in","Mol","Ch’en","Yax","Sak’","Keh","Mak","K’ank’in","Muwan","Pax","K’ayab","Kumk’u","Wayeb"];
+const mayanBase=584283;
+
+function gregorianToJulian(date){
+const y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
+const a=Math.floor((14-m)/12),y2=y+4800-a,m2=m+12*a-3;
+return d+Math.floor((153*m2+2)/5)+365*y2+Math.floor(y2/4)-Math.floor(y2/100)+Math.floor(y2/400)-32045;}
+
+function julianToGregorian(jd){
+const z=jd+.5,w=Math.floor(z),x=Math.floor((w-1867216.25)/36524.25);
+const a=w+1+x-Math.floor(x/4),b=a+1524,c=Math.floor((b-122.1)/365.25);
+const d=Math.floor(365.25*c),e=Math.floor((b-d)/30.6001);
+const day=b-d-Math.floor(30.6001*e),month=(e<14)?e-1:e-13,year=(month>2)?c-4716:c-4715;
+return new Date(year,month-1,day);}
+
+function update(days){
+const jd=mayanBase+days,g=julianToGregorian(jd);
+const yyyy=g.getFullYear(),mm=String(g.getMonth()+1).padStart(2,'0'),dd=String(g.getDate()).padStart(2,'0');
+document.getElementById("gregorian").textContent=`Gregorian: ${yyyy}-${mm}-${dd}`;
+const baktun=Math.floor(days/144000),katun=Math.floor((days%144000)/7200),tun=Math.floor((days%7200)/360),uinal=Math.floor((days%360)/20),kin=days%20;
+document.getElementById("longCount").textContent=`Long Count: ${baktun}.${katun}.${tun}.${uinal}.${kin}`;
+const tzolkinNum=(days%13)+1,tzolkinName=tzolkinNames[days%20];
+document.getElementById("tzolkin").textContent=`Tzolk'in: ${tzolkinNum} ${tzolkinName}`;
+const haabDay=(days+8)%365,haabMonth=haabDay<360?haabMonths[Math.floor(haabDay/20)]:"Wayeb",haabNum=haabDay<360?haabDay%20:haabDay-360;
+document.getElementById("haab").textContent=`Haab’: ${haabNum} ${haabMonth}`;
+const prediction=document.getElementById("prediction");
+prediction.textContent=(days%18980===0)?`✨ Calendar Round reset!`:(days%1872000===0)?`🔥 Great Cycle ends!`:"";
+const year=Math.round(days/365.25),nextCataclysm=Math.ceil(year/7000)*7000,delta=nextCataclysm-year;
+document.getElementById("cataclysm").textContent=delta<=0?`☄️ Cataclysm ongoing or overdue!`:`🕒 Next cataclysm in ~${delta} years`;
+document.getElementById("severityFill").style.width=Math.min(100,Math.max(0,(1-delta/7000)*100))+"%";
+document.getElementById("severityFill").style.background=delta/7000<.2?"#f00":delta/7000<.5?"#ff0":"#0f0";
+document.getElementById("severity").textContent=`Severity Index: ${(Math.min(100,Math.max(0,(1-delta/7000)*100))).toFixed(0)}%`;
+}
+document.getElementById("slider").addEventListener("input",()=>{
+const y=parseInt(slider.value),d=Math.floor(y*365.25);
+document.getElementById("sliderLabel").textContent=`${y} CE`;
+update(d);});
+document.getElementById("dateInput").addEventListener("change",()=>{
+const[y,m,d]=document.getElementById("dateInput").value.split("-").map(Number);
+const g=new Date(y,m-1,d),jd=gregorianToJulian(g),days=jd-mayanBase;
+update(days);
+slider.value=y;
+document.getElementById("sliderLabel").textContent=`${y} CE`;});
+update(0);
+</script>
+</body></html>
