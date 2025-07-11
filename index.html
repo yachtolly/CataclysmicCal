@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mayan Calendar + Cataclysms (Animated)</title>
+<title>Mayan Calendar + Cataclysms (Clean Storm)</title>
 <style>
 body {
 	font-family: monospace;
@@ -57,20 +57,21 @@ input[type=range], input[type=date] {
 #stormOverlay {
 	position: fixed;
 	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 100px;
+	height: 100px;
 	pointer-events: none;
 	z-index: 10;
 	display: none;
 	font-size: 4em;
-	background: rgba(0,0,0,0.6);
 	color: #fff;
-	animation: flicker 0.8s infinite;
+	opacity: 0.8;
+	animation: hoverCloud 3s ease-in-out infinite alternate;
 }
-@keyframes flicker {
-  0%, 100% { opacity: 0.1; }
-  50% { opacity: 1; }
+@keyframes hoverCloud {
+	from { transform: translateX(-50%) translateY(0); }
+	to { transform: translateX(-50%) translateY(10px); }
 }
 .fade-slide {
   opacity: 0;
@@ -145,10 +146,10 @@ const day=b-d-Math.floor(30.6001*e),month=(e<14)?e-1:e-13,year=(month>2)?c-4716:
 return new Date(year,month-1,day);}
 
 function showStorm() {
-  document.getElementById("stormOverlay").style.display = "block";
+  document.getElementById("stormOverlay").classList.add("show");
 }
 function hideStorm() {
-  document.getElementById("stormOverlay").style.display = "none";
+  document.getElementById("stormOverlay").classList.remove("show");
 }
 
 function glowOutput() {
