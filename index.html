@@ -55,19 +55,22 @@ input[type=range], input[type=date] {
 	transition: width 0.5s ease-out, background 0.5s ease-out;
 }
 #stormOverlay {
-	position: fixed;
-	top: 0;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 100px;
-	height: 100px;
-	pointer-events: none;
-	z-index: 10;
-	display: none;
-	font-size: 4em;
-	color: #fff;
-	opacity: 0.8;
-	animation: hoverCloud 3s ease-in-out infinite alternate;
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 100px;
+        pointer-events: none;
+        z-index: 10;
+        display: none;
+        font-size: 4em;
+        color: #fff;
+        opacity: 0.8;
+        animation: hoverCloud 3s ease-in-out infinite alternate;
+}
+#stormOverlay.show {
+        display: block;
 }
 @keyframes hoverCloud {
 	from { transform: translateX(-50%) translateY(0); }
@@ -103,6 +106,7 @@ input[type=range], input[type=date] {
 
 <p style="margin-top:1em;font-size:1.2rem; color:#fff;">✅ Pick a <strong>Gregorian Date</strong> Below:</p>
 <input type="date" id="dateInput" value="2025-07-10">
+<button id="todayBtn">Today</button>
 
 <p>📅 Or use timeline slider:</p>
 <input type="range" id="slider" min="-10000" max="5000" value="0">
@@ -162,8 +166,9 @@ function update(days) {
 const jd = mayanBase + days;
 const g = julianToGregorian(jd);
 const yyyy = g.getFullYear(), mm = g.getMonth()+1, dd = g.getDate();
+const weekday = g.toLocaleString('default',{weekday:'long'});
 
-const gregorianStr = `${yyyy < 0 ? Math.abs(yyyy) + " BCE" : yyyy} ${g.toLocaleString('default',{month:'long'})} ${dd}`;
+const gregorianStr = `${weekday}, ${yyyy < 0 ? Math.abs(yyyy) + " BCE" : yyyy} ${g.toLocaleString('default',{month:'long'})} ${dd}`;
 document.getElementById("gregorianFriendly").innerHTML = `🗓 <strong>Gregorian:</strong> ${gregorianStr}`;
 
 const baktun = Math.floor(days/144000),
@@ -211,6 +216,13 @@ const g=new Date(y,m-1,d),jd=gregorianToJulian(g),days=jd-mayanBase;
 update(days);
 slider.value=y;
 document.getElementById("sliderLabel").textContent=`${y} CE`;});
+document.getElementById("todayBtn").addEventListener("click",()=>{
+const now=new Date();
+const jd=gregorianToJulian(now),days=jd-mayanBase;
+update(days);
+document.getElementById("dateInput").value=now.toISOString().slice(0,10);
+slider.value=now.getFullYear();
+document.getElementById("sliderLabel").textContent=`${now.getFullYear()} CE`;});
 
 document.getElementById("lensSelect").addEventListener("change", renderTimeline);
 document.getElementById("eonMode").addEventListener("change", renderTimeline);
