@@ -26,9 +26,17 @@ p, .info {
 	margin: 0.2em 0;
 	word-wrap: break-word;
 }
-.info strong, #severity, #cataclysm {
-	font-weight: bold;
-	color: #fff;
+#output {
+	text-align:left;
+	max-width:600px;
+	margin:1em auto;
+	padding:1em;
+	background:#222;
+	border:1px solid #333;
+	color:#ccc;
+}
+#output div {
+	margin:0.3em 0;
 }
 input[type=range], input[type=date] {
 	width: 95%;
@@ -36,26 +44,6 @@ input[type=range], input[type=date] {
 	margin: .5em auto;
 	padding: .3em;
 	text-align: center;
-}
-#timelineGraph {
-	margin: 1em auto;
-	width: 95%;
-	height: 60px;
-	background: #222;
-	border: 1px solid #333;
-	position: relative;
-	text-align: left;
-	overflow-x: auto;
-}
-#timelineGraph::before {
-	content: "";
-	display: block;
-	position: absolute;
-	top: 50%;
-	left: 0;
-	width: 100%;
-	height: 2px;
-	background: #444;
 }
 #severityBar {
 	width: 95%;
@@ -81,42 +69,6 @@ input[type=range], input[type=date] {
 	display: none;
 	font-size: 4em;
 }
-.help {
-	font-size: .9em;
-	color: #ccc;
-	margin-top: .3em;
-}
-.cheat-sheet, .cataclysm-timeline {
-	text-align: left;
-	max-width: 95%;
-	margin: 1em auto;
-	color: #ccc;
-	background: #222;
-	padding: 1em;
-	border: 1px solid #333;
-	font-size: 0.95rem;
-}
-.cheat-sheet h2, .cataclysm-timeline h2 {
-	text-align: center;
-	color: #f55;
-	font-size: 1.2rem;
-}
-.cataclysm-timeline ul {
-	list-style: none;
-	padding: 0;
-}
-.cataclysm-timeline li {
-	margin: .5em 0;
-	padding-left: 1.2em;
-	position: relative;
-	line-height: 1.3;
-}
-.cataclysm-timeline li::before {
-	content: "☄️";
-	position: absolute;
-	left: 0;
-	color: #f55;
-}
 </style>
 </head>
 <body>
@@ -124,7 +76,7 @@ input[type=range], input[type=date] {
 <h1>🌒 Mayan Calendar + Cataclysm Countdown</h1>
 
 <div>
-  <label for="lensSelect" style="font-size:1.1rem;">🔍 Select Lens:</label>
+  <label for="lensSelect">🔍 Select Lens:</label>
   <select id="lensSelect">
     <option value="mythic">Mythic</option>
     <option value="scientific" selected>Scientific</option>
@@ -133,39 +85,36 @@ input[type=range], input[type=date] {
 </div>
 
 <div>
-  <label for="eonMode" style="font-size:1.1rem;">🌎 Show Eons & Epochs?</label>
+  <label for="eonMode">🌎 Show Eons & Epochs?</label>
   <input type="checkbox" id="eonMode">
 </div>
 
 <p style="margin-top:1em;font-size:1.2rem; color:#fff;">✅ Pick a <strong>Gregorian Date</strong> Below:</p>
-<input type="date" id="dateInput" value="2025-07-10" style="font-size:1.2rem; padding:.5em; width:95%; max-width:400px;">
+<input type="date" id="dateInput" value="2025-07-10">
 
-<div class="help">Or use the slider below to pick a year instead.</div>
+<p>📅 Or use timeline slider:</p>
+<input type="range" id="slider" min="-10000" max="5000" value="0">
+<br><span id="sliderLabel"></span>
 
-<p id="gregorian"></p>
-<div class="info"><strong>Mayan Long Count</strong> — tracks total days since creation.</div>
-<p id="longCount"></p>
-<p id="tzolkin"></p>
-<div class="info"><strong>Tzolk’in</strong> — 260-day sacred cycle.</div>
-<p id="haab"></p>
-<div class="info"><strong>Haab’</strong> — 365-day solar cycle.</div>
-<p id="prediction"></p>
+<div id="output">
+  <h2 style="text-align:center;color:#f5f5f5;">📜 Date Details</h2>
+  <div id="gregorianFriendly"></div>
+  <div id="longCountFriendly"></div>
+  <div id="tzolkinFriendly"></div>
+  <div id="haabFriendly"></div>
+  <div id="noteFriendly"></div>
+</div>
+
 <p id="cataclysm"></p>
 <p id="severity"></p>
 <div id="severityBar"><div id="severityFill"></div></div>
-
-<div id="timelineGraph"></div>
-<div id="stormOverlay">🌩️</div>
-
-<p>📅 Or use timeline slider:<br>
-<input type="range" id="slider" min="-10000" max="5000" value="0">
-<br><span id="sliderLabel"></span>
-</p>
 
 <div class="cataclysm-timeline">
 <h2>☄️ Documented & Theorized Cataclysms</h2>
 <ul></ul>
 </div>
+
+<div id="stormOverlay">🌩️</div>
 
 <script>
 const tzolkinNames=["Imix","Ik’","Ak’bal","K’an","Chikchan","Kimi","Manik’","Lamat","Muluk","Ok","Chuwen","Eb'","B’en","Ix","Men","K’ib'","Kaban","Etz’nab’","Kawak","Ajaw"];
@@ -184,23 +133,44 @@ const d=Math.floor(365.25*c),e=Math.floor((b-d)/30.6001);
 const day=b-d-Math.floor(30.6001*e),month=(e<14)?e-1:e-13,year=(month>2)?c-4716:c-4715;
 return new Date(year,month-1,day);}
 
-function update(days){
-const jd=mayanBase+days,g=julianToGregorian(jd);
-const yyyy=g.getFullYear(),mm=String(g.getMonth()+1).padStart(2,'0'),dd=String(g.getDate()).padStart(2,'0');
-document.getElementById("gregorian").textContent=`Gregorian: ${yyyy}-${mm}-${dd}`;
-const baktun=Math.floor(days/144000),katun=Math.floor((days%144000)/7200),tun=Math.floor((days%7200)/360),uinal=Math.floor((days%360)/20),kin=days%20;
-document.getElementById("longCount").textContent=`Long Count: ${baktun}.${katun}.${tun}.${uinal}.${kin}`;
-const tzolkinNum=(days%13)+1,tzolkinName=tzolkinNames[days%20];
-document.getElementById("tzolkin").textContent=`Tzolk'in: ${tzolkinNum} ${tzolkinName}`;
-const haabDay=(days+8)%365,haabMonth=haabDay<360?haabMonths[Math.floor(haabDay/20)]:"Wayeb",haabNum=haabDay<360?haabDay%20:haabDay-360;
-document.getElementById("haab").textContent=`Haab’: ${haabNum} ${haabMonth}`;
-const prediction=document.getElementById("prediction");
-prediction.textContent=(days%18980===0)?`✨ Calendar Round reset!`:(days%1872000===0)?`🔥 Great Cycle ends!`:"";
-const year=Math.round(days/365.25),nextCataclysm=Math.ceil(year/7000)*7000,delta=nextCataclysm-year;
-document.getElementById("cataclysm").textContent=delta<=0?`☄️ Cataclysm ongoing or overdue!`:`🕒 Next cataclysm in ~${delta} years`;
+function update(days) {
+const jd = mayanBase + days;
+const g = julianToGregorian(jd);
+const yyyy = g.getFullYear(), mm = g.getMonth()+1, dd = g.getDate();
+
+const gregorianStr = `${yyyy < 0 ? Math.abs(yyyy) + " BCE" : yyyy} ${g.toLocaleString('default',{month:'long'})} ${dd}`;
+document.getElementById("gregorianFriendly").innerHTML = `🗓 <strong>Gregorian:</strong> ${gregorianStr}`;
+
+const baktun = Math.floor(days/144000),
+katun = Math.floor((days%144000)/7200),
+tun = Math.floor((days%7200)/360),
+uinal = Math.floor((days%360)/20),
+kin = days%20;
+
+const longDesc = `🕰️ <strong>Long Count:</strong> ${Math.abs(baktun)} Baktun, ${katun} Katun, ${tun} Tun, ${uinal} Uinal, ${kin} Kin ${baktun<0?"before creation":"since creation"}`;
+document.getElementById("longCountFriendly").innerHTML = longDesc;
+
+const tzolkinNum = (days%13)+1;
+const tzolkinName = tzolkinNames[days%20] || "unknown glyph";
+const tzolkinText = `✨ <strong>Tzolk’in:</strong> ${tzolkinNum} ${tzolkinName} ${days<0?"(mythic territory)":""}`;
+document.getElementById("tzolkinFriendly").innerHTML = tzolkinText;
+
+const haabDay = (days+8)%365;
+const haabMonth = haabDay<360?haabMonths[Math.floor(haabDay/20)]:"Wayeb (nameless)";
+const haabNum = haabDay<360?haabDay%20:haabDay-360;
+const haabText = `🌞 <strong>Haab’:</strong> ${haabNum} ${haabMonth} ${days<0?"(pre-calendar?)":""}`;
+document.getElementById("haabFriendly").innerHTML = haabText;
+
+const note = days<0
+? `⚠️ This date is so ancient it may predate even the gods’ spreadsheets.`
+: `✅ This date is within the known Mayan cycles.`;
+document.getElementById("noteFriendly").innerHTML = note;
+
+const year = Math.round(days/365.25), nextCataclysm=Math.ceil(year/7000)*7000, delta=nextCataclysm-year;
+document.getElementById("cataclysm").textContent = delta<=0?`☄️ Cataclysm ongoing or overdue!`:`🕒 Next cataclysm in ~${delta} years`;
 document.getElementById("severityFill").style.width=Math.min(100,Math.max(0,(1-delta/7000)*100))+"%";
 document.getElementById("severityFill").style.background=delta/7000<.2?"#f00":delta/7000<.5?"#ff0":"#0f0";
-document.getElementById("severity").textContent=`Severity Index: ${(Math.min(100,Math.max(0,(1-delta/7000)*100))).toFixed(0)}%`;
+document.getElementById("severity").textContent = `Severity Index: ${(Math.min(100,Math.max(0,(1-delta/7000)*100))).toFixed(0)}%`;
 }
 
 document.getElementById("slider").addEventListener("input",()=>{
@@ -213,6 +183,7 @@ const g=new Date(y,m-1,d),jd=gregorianToJulian(g),days=jd-mayanBase;
 update(days);
 slider.value=y;
 document.getElementById("sliderLabel").textContent=`${y} CE`;});
+
 document.getElementById("lensSelect").addEventListener("change", renderTimeline);
 document.getElementById("eonMode").addEventListener("change", renderTimeline);
 
@@ -226,15 +197,15 @@ if(eons){
 timeline.innerHTML+=`<li><strong>~4.5 BYA</strong> — Hadean Eon: Earth forms</li>`;
 timeline.innerHTML+=`<li><strong>~3.5 BYA</strong> — Archean: First life</li>`;
 timeline.innerHTML+=`<li><strong>~2.5 BYA</strong> — Proterozoic: Oxygenation</li>`;
-timeline.innerHTML+=`<li><strong>~541 MYA</strong> — Phanerozoic: Cambrian Explosion</li>`;
+timeline.innerHTML+=`<li><strong>~541 MYA</strong> — Cambrian Explosion</li>`;
 }
 if(lens==="mythic"||lens==="hybrid"){
-timeline.innerHTML+=`<li><strong>Pre-Adamic</strong> — Ancient civilization destroyed (Alberino)</li>`;
-timeline.innerHTML+=`<li><strong>Watchers Descent</strong> — Nephilim & hybrid epoch</li>`;
+timeline.innerHTML+=`<li><strong>Pre-Adamic</strong> — Ancient civilization destroyed</li>`;
+timeline.innerHTML+=`<li><strong>Watchers Descent</strong> — Nephilim & hybrids</li>`;
 timeline.innerHTML+=`<li><strong>Noah's Flood</strong> — Divine reset</li>`;
 }
 if(lens==="scientific"||lens==="hybrid"){
-timeline.innerHTML+=`<li><strong>~11,500 BCE</strong> — End of Ice Age, Younger Dryas</li>`;
+timeline.innerHTML+=`<li><strong>~11,500 BCE</strong> — End of Ice Age</li>`;
 timeline.innerHTML+=`<li><strong>~7,000 BCE</strong> — Black Sea Deluge</li>`;
 timeline.innerHTML+=`<li><strong>~1,200 BCE</strong> — Bronze Age Collapse</li>`;
 timeline.innerHTML+=`<li><strong>536 CE</strong> — Volcanic winter</li>`;
